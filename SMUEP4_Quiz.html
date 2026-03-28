@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SMÜP 4 Trainer</title>
+<style>
+  :root {
+    --bg: linear-gradient(160deg, #faf8f4 0%, #f0ece3 100%);
+    --card: #ffffff;
+    --border: #e8e4de;
+    --text: #1a1a1a;
+    --muted: #888;
+    --ok: #2a6e4e;
+    --ok-bg: #e8f5ed;
+    --err: #c44;
+    --err-bg: #fce8e4;
+    --blue: #2a4a6e;
+    --blue-bg: #eef3fa;
+    --warm-bg: #fef9f0;
+    --green-bg: #f0f7f3;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); min-height:100vh; color:var(--text); line-height:1.5; }
+  .container { max-width:600px; margin:0 auto; padding:20px 16px 80px; }
+
+  /* buttons */
+  .btn { border:none; border-radius:10px; font-weight:700; cursor:pointer; font-size:0.95em; transition:all .15s; font-family:inherit; }
+  .btn-primary { background:var(--blue); color:white; padding:12px 28px; }
+  .btn-primary:disabled { background:#ccc; cursor:default; }
+  .btn-full { width:100%; padding:14px; border-radius:12px; font-size:1.02em; box-shadow:0 3px 10px rgba(0,0,0,.1); }
+  .btn-outline { background:white; color:var(--text); border:1.5px solid #d0ccc6; padding:13px; }
+
+  /* MENU */
+  .menu-header { text-align:center; padding:32px 16px 24px; }
+  .menu-header .icon { font-size:2.4em; }
+  .menu-header h1 { font-size:1.6em; font-weight:800; margin:4px 0; }
+  .menu-header p { color:#999; font-size:.88em; }
+  .topic-list { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .topic-btn {
+    display:flex; align-items:center; gap:12px; padding:14px 16px;
+    background:white; border:1.5px solid var(--border); border-radius:12px;
+    cursor:pointer; font-size:.95em; text-align:left; transition:all .12s;
+    box-shadow:0 1px 3px rgba(0,0,0,.04); font-family:inherit; color:var(--text);
+  }
+  .topic-btn:active { transform:scale(.98); }
+  .topic-btn.mixed {
+    background:linear-gradient(135deg,#1a1a1a,#333); color:white; border:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.12);
+  }
+  .topic-icon {
+    width:40px; height:40px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:1.2em;
+  }
+  .topic-btn.mixed .topic-icon { background:rgba(255,255,255,.12); }
+  .topic-label { font-weight:700; }
+  .topic-desc { font-size:.78em; opacity:.55; margin-top:1px; }
+  .topic-arrow { opacity:.3; font-size:1.2em; margin-left:auto; }
+  .tip-box { margin-top:20px; padding:14px 16px; background:#fffcf4; border-radius:10px; border:1px solid #ede8df; font-size:.84em; color:#999; line-height:1.5; }
+
+  /* QUIZ HEADER */
+  .quiz-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:10px; border-bottom:2px solid var(--border); }
+  .quiz-back { background:none; border:none; font-size:1.3em; cursor:pointer; padding:2px 6px; color:var(--muted); }
+  .quiz-info { text-align:center; }
+  .quiz-topic { font-weight:800; font-size:.88em; }
+  .quiz-progress-text { font-size:.76em; color:#aaa; }
+  .quiz-score { background:#f0ece4; padding:5px 12px; border-radius:16px; font-size:.82em; font-weight:700; color:#666; }
+  .progress-bar { height:5px; background:#e8e4de; border-radius:3px; margin-bottom:18px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:3px; transition:width .3s; }
+  .q-type-badge { display:inline-block; padding:3px 10px; border-radius:16px; font-size:.74em; font-weight:700; margin-bottom:12px; }
+  .q-card { background:white; border-radius:16px; padding:20px 18px; box-shadow:0 2px 14px rgba(0,0,0,.04); }
+  .q-text { font-size:1.05em; font-weight:600; margin-bottom:16px; line-height:1.5; }
+
+  /* MC OPTIONS */
+  .mc-opts { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  .mc-opt {
+    padding:11px 16px; text-align:left; border:2px solid #d0ccc6; border-radius:10px;
+    background:white; color:var(--text); font-size:.95em; cursor:pointer;
+    font-weight:400; transition:all .15s; font-family:inherit; width:100%;
+  }
+  .mc-opt.selected { background:var(--blue-bg); border-color:#2a4a8e; color:#1a3a6e; font-weight:700; }
+  .mc-opt.correct { background:var(--ok-bg); border-color:var(--ok); color:#1a5e3e; }
+  .mc-opt.wrong { background:var(--err-bg); border-color:var(--err); color:#922; }
+  .mc-opt:disabled { cursor:default; }
+  .mc-letter { font-weight:700; margin-right:8px; opacity:.4; }
+
+  /* CALC INPUT */
+  .calc-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .calc-label { font-weight:700; }
+  .calc-input {
+    padding:11px 14px; border:2px solid #d0ccc6; border-radius:10px;
+    font-size:1.1em; font-family:monospace; width:140px; font-weight:700; outline:none;
+  }
+  .calc-input.correct { border-color:var(--ok); }
+  .calc-input.wrong { border-color:var(--err); }
+
+  /* MATCH */
+  .match-row { display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .match-left {
+    flex:1 1 38%; padding:10px 12px; background:#f8f6f3; border-radius:8px;
+    font-weight:600; font-size:.92em; border:2px solid var(--border);
+  }
+  .match-left.correct { border-color:var(--ok); }
+  .match-left.wrong { border-color:var(--err); }
+  .match-arrow { color:#bbb; }
+  .match-select {
+    flex:1 1 38%; padding:10px; border-radius:8px; font-size:.92em;
+    border:2px solid #d0ccc6; background:white; font-family:inherit;
+  }
+  .match-select:disabled { background:#f5f5f5; }
+
+  /* FEEDBACK */
+  .feedback { margin-top:14px; padding:14px 16px; border-radius:8px; border-left:4px solid; }
+  .feedback.ok { background:var(--ok-bg); border-color:var(--ok); }
+  .feedback.err { background:var(--err-bg); border-color:var(--err); }
+  .feedback strong { display:block; margin-bottom:4px; }
+  .feedback .expl { font-size:.92em; line-height:1.5; margin-top:6px; }
+
+  /* RESULT */
+  .result-card { text-align:center; padding:32px 20px; background:white; border-radius:18px; box-shadow:0 2px 20px rgba(0,0,0,.05); }
+  .result-emoji { font-size:2.8em; }
+  .result-grade { font-size:1.6em; font-weight:800; margin:4px 0; }
+  .result-pct { font-size:2.8em; font-weight:800; }
+  .result-sub { color:var(--muted); font-size:.95em; }
+  .result-bar { margin-top:20px; height:10px; background:#f0ece4; border-radius:5px; overflow:hidden; }
+  .result-bar-fill { height:100%; border-radius:5px; transition:width .8s; }
+  .result-dots { display:flex; gap:5px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+  .result-dot { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.8em; }
+  .result-dot.ok { background:var(--ok-bg); color:var(--ok); }
+  .result-dot.err { background:var(--err-bg); color:var(--err); }
+  .result-btns { display:flex; gap:8px; margin-top:20px; }
+  .result-btns .btn { flex:1; padding:13px; }
+
+  /* SVG GRAPH */
+  .graph-wrap { text-align:center; margin:10px 0 14px; }
+  .graph-wrap svg { display:block; margin:0 auto; background:#faf9f7; border-radius:10px; border:1px solid var(--border); }
+
+  @media(max-width:400px) {
+    .container { padding:14px 10px 60px; }
+    .q-card { padding:16px 14px; }
+    .match-left, .match-select { flex:1 1 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="app"></div>
+
+<script>
+// ──────────── DATA ────────────
+const TOPICS = [
+  { id:"parabeln", label:"Parabeln & Parameter a", icon:"\u2312", color:"#d4592a", desc:"Testaufgabe Nr. 1" },
+  { id:"hyperbeln", label:"Hyperbeln, Parameter & Polstelle", icon:"\u2AD5", color:"#2a6e4e", desc:"Testaufgabe Nr. 2 & 4" },
+  { id:"symmetrie", label:"Symmetrie bestimmen", icon:"\u27F7", color:"#5a3e8e", desc:"Testaufgabe Nr. 3" },
+  { id:"wurzel", label:"Wurzelfunktionen & Definitionsbereich", icon:"\u221A", color:"#2a6494", desc:"Testaufgabe Nr. 6" },
+  { id:"koeffizienten", label:"Koeffizienten a, b, c interpretieren", icon:"\uD835\uDC53", color:"#8e6a2a", desc:"Testaufgabe Nr. 5b" },
+  { id:"gleichung", label:"Gleichung durch Punkte bestimmen", icon:"\u2261", color:"#2a4a6e", desc:"Schuluebung 4.008-4.012" },
+  { id:"grafisch", label:"Grafische Darstellung", icon:"\uD83D\uDCC8", color:"#6e2a5a", desc:"Testaufgabe Nr. 5a & Graphen lesen" },
+  { id:"schnittpunkt", label:"Schnittpunkte berechnen", icon:"\u2715", color:"#3a7e5a", desc:"Testaufgabe Nr. 4a" },
+  { id:"mixed", label:"\uD83D\uDD25 Gemischter Test (wie SMUEP)", icon:"\uD83D\uDCDD", color:"#c44", desc:"14 Fragen aus allen Bereichen" },
+];
+
+const Q = {
+  parabeln: [
+    {type:"mc",q:"f(x) = ax\u00B2. Wenn 0 < a < 1, dann ist die Parabel im Vergleich zur Normalparabel \u2026",opts:["steiler und nach oben offen","flacher und nach oben offen","flacher und nach unten offen","steiler und nach unten offen"],ans:1,expl:"0 < a < 1: a > 0 \u2192 oben offen. |a| < 1 \u2192 flacher."},
+    {type:"mc",q:"Welcher Wert von a ergibt eine Parabel, die gleich wie die Normalparabel ist, aber nach unten offen?",opts:["a = 1","a = \u22121","a = 0,5","a = \u22122"],ans:1,expl:"Gleich wie Normal \u2192 |a| = 1. Nach unten \u2192 a < 0. Also a = \u22121."},
+    {type:"mc",q:"f(x) = \u22123x\u00B2. Was stimmt?",opts:["Flacher, nach unten offen","Steiler, nach oben offen","Steiler, nach unten offen","Gleich wie Normal, nach unten"],ans:2,expl:"a = \u22123: a < 0 \u2192 unten offen. |\u22123| = 3 > 1 \u2192 steiler."},
+    {type:"mc",q:"Welche Parabel ist am flachsten?",opts:["f(x) = 2x\u00B2","f(x) = x\u00B2","f(x) = 0,1x\u00B2","f(x) = \u22125x\u00B2"],ans:2,expl:"|0,1| = 0,1 ist der kleinste Betrag \u2192 am flachsten."},
+    {type:"match",q:"Ordne die Eigenschaft dem Wert von a zu:",pairs:[{left:"Steiler, nach oben offen",right:"a > 1"},{left:"Flacher, nach oben offen",right:"0 < a < 1"},{left:"Normalparabel nach unten",right:"a = \u22121"},{left:"Steiler, nach unten offen",right:"a < \u22121"}]},
+    {type:"mc",q:"f(x) = ax\u00B2. Graph ist flacher als Normal und nach unten offen. Bereich fuer a?",opts:["a > 1","0 < a < 1","\u22121 < a < 0","a < \u22121"],ans:2,expl:"Flacher \u2192 |a| < 1. Unten offen \u2192 a < 0. Also \u22121 < a < 0."},
+    {type:"mc",q:"Wie erkennt man an a, ob die Parabel nach oben oder unten offen ist?",opts:["Am Betrag von a","a > 0 \u2192 oben, a < 0 \u2192 unten","a > 1 \u2192 oben, a < 1 \u2192 unten","Daran erkennt man es nicht"],ans:1,expl:"Vorzeichen von a: positiv = oben, negativ = unten."},
+  ],
+  hyperbeln: [
+    {type:"mc",q:"Welche Funktion ist eine Hyperbel?",opts:["f(x) = 2x\u00B3","f(x) = x\u207B\u00B2","f(x) = \u221Ax","f(x) = x\u00B2 + 1"],ans:1,expl:"Negativer Exponent \u2192 Hyperbel. x\u207B\u00B2 = 1/x\u00B2."},
+    {type:"mc",q:"Was ist eine Polstelle?",opts:["Der Scheitel einer Parabel","Ein x-Wert, wo f(x) = 0","Ein x-Wert, wo die Funktion nicht definiert ist (Nenner = 0)","Der y-Achsenabschnitt"],ans:2,expl:"An der Polstelle wird durch 0 geteilt \u2192 Funktion nicht definiert. Bei Hyperbeln liegt sie bei x = 0."},
+    {type:"mc",q:"Welche Asymptoten hat f(x) = 3/x\u00B2?",opts:["Nur die x-Achse","Nur die y-Achse","x-Achse (waagerecht) und y-Achse (senkrecht)","Keine"],ans:2,expl:"Jede Hyperbel hat die x-Achse als waagerechte und die y-Achse als senkrechte Asymptote."},
+    {type:"calc",q:"f(x) = d\u00B7x\u207B\u2074 verlaeuft durch A(2|4). Berechne d.",answer:64,tolerance:0.5,expl:"f(2) = 4 \u2192 d\u00B72\u207B\u2074 = 4 \u2192 d\u00B7(1/16) = 4 \u2192 d = 64."},
+    {type:"calc",q:"f(x) = c\u00B7x\u207B\u00B9 verlaeuft durch (1|\u22121). Berechne c.",answer:-1,tolerance:0.01,expl:"c\u00B71\u207B\u00B9 = \u22121 \u2192 c = \u22121."},
+    {type:"calc",q:"f(x) = c\u00B7x\u207B\u00B3 verlaeuft durch (0,5|2). Berechne c.",answer:0.25,tolerance:0.01,expl:"c\u00B70,5\u207B\u00B3 = 2 \u2192 c\u00B78 = 2 \u2192 c = 0,25."},
+    {type:"mc",q:"Wie berechnet man d, wenn f(x) = d\u00B7x\u207B\u207F durch Punkt A(x\u2080|y\u2080) geht?",opts:["d = y\u2080 \u00B7 x\u2080\u207F","d = y\u2080 / x\u2080","d = x\u2080 \u00B7 y\u2080\u207B\u00B9","d = y\u2080 + x\u2080"],ans:0,expl:"y\u2080 = d\u00B7x\u2080\u207B\u207F \u2192 d = y\u2080 \u00B7 x\u2080\u207F."},
+    {type:"mc",q:"Definitionsbereich einer Hyperbel f(x) = a\u00B7x\u207B\u207F?",opts:["D = \u211D","D = \u211D \\ {0}","D = [0; \u221E[","D = \u211D\u207A"],ans:1,expl:"Bei x = 0 wird durch Null geteilt \u2192 D = \u211D \\ {0}."},
+  ],
+  symmetrie: [
+    {type:"mc",q:"Wie prueft man Achsensymmetrie zur y-Achse?",opts:["f(\u2212x) = \u2212f(x)","f(\u2212x) = f(x)","f(x) = 0","f(1) = f(\u22121) reicht"],ans:1,expl:"Achsensymmetrie: f(\u2212x) = f(x) muss fuer ALLE x gelten."},
+    {type:"mc",q:"f(x) = x\u2074/4 + 1. Welche Symmetrie? (Testaufgabe Nr. 3!)",opts:["Punktsymmetrie zum Ursprung","Achsensymmetrie zur y-Achse","Keine Symmetrie","Punktsymmetrie zu (0|1)"],ans:1,expl:"f(\u2212x) = (\u2212x)\u2074/4 + 1 = x\u2074/4 + 1 = f(x) \u2192 achsensymmetrisch. Exponent 4 ist GERADE!"},
+    {type:"mc",q:"f(x) = x\u00B3/3 + 2. Welche Symmetrie?",opts:["Punktsymmetrie","Achsensymmetrie","Keine Symmetrie","Beides"],ans:2,expl:"f(\u2212x) = \u2212x\u00B3/3 + 2 \u2260 f(x) und \u2260 \u2212f(x). Die +2 zerstoert die Punktsymmetrie!"},
+    {type:"mc",q:"Gerader Exponent bei f(x) = ax\u207F bedeutet \u2026",opts:["Punktsymmetrie","Achsensymmetrie","Keine Symmetrie","Kommt auf a an"],ans:1,expl:"(\u2212x)\u207F = x\u207F wenn n gerade \u2192 f(\u2212x) = f(x) \u2192 Achsensymmetrie."},
+    {type:"mc",q:"Ungerader Exponent bei f(x) = ax\u207F bedeutet \u2026",opts:["Achsensymmetrie","Punktsymmetrie zum Ursprung","Keine","Symmetrie zur x-Achse"],ans:1,expl:"(\u2212x)\u207F = \u2212x\u207F wenn n ungerade \u2192 f(\u2212x) = \u2212f(x) \u2192 Punktsymmetrie."},
+    {type:"match",q:"Ordne die Symmetrie zu:",pairs:[{left:"f(x) = x\u00B2",right:"Achsensymmetrie"},{left:"f(x) = x\u00B3",right:"Punktsymmetrie"},{left:"f(x) = x\u207B\u00B2",right:"Achsensymmetrie"},{left:"f(x) = x\u207B\u00B3",right:"Punktsymmetrie"}]},
+    {type:"mc",q:"f(x) = 1/(2x) + 1. Hat diese Funktion Punktsymmetrie zum Ursprung?",opts:["Ja","Nein \u2013 die +1 zerstoert die Symmetrie","Ja, weil x\u207B\u00B9 ungerade ist","Keine Aussage moeglich"],ans:1,expl:"Die Konstante +1 zerstoert die Punktsymmetrie."},
+    {type:"mc",q:"Was passiert mit Punktsymmetrie, wenn man +k addiert (k \u2260 0)?",opts:["Bleibt erhalten","Geht verloren","Wird zu Achsensymmetrie","Kommt auf k an"],ans:1,expl:"Eine Konstante verschiebt den Graph und zerstoert die Punktsymmetrie zum Ursprung."},
+  ],
+  wurzel: [
+    {type:"calc",q:"f(x) = \u221A(x \u2212 3). Ab welchem x-Wert ist f definiert?",answer:3,tolerance:0.01,expl:"x \u2212 3 \u2265 0 \u2192 x \u2265 3. D = [3; \u221E[."},
+    {type:"calc",q:"f(x) = \u221A(x + 1). Ab welchem x-Wert?",answer:-1,tolerance:0.01,expl:"x + 1 \u2265 0 \u2192 x \u2265 \u22121. D = [\u22121; \u221E[."},
+    {type:"calc",q:"f(x) = \u221A(2x \u2212 8). Ab welchem x-Wert?",answer:4,tolerance:0.01,expl:"2x \u2212 8 \u2265 0 \u2192 2x \u2265 8 \u2192 x \u2265 4."},
+    {type:"calc",q:"f(x) = \u221A(x + 3) \u2212 2. Ab welchem x-Wert? (Tipp: \u22122 ist ausserhalb der Wurzel!)",answer:-3,tolerance:0.01,expl:"x + 3 \u2265 0 \u2192 x \u2265 \u22123. Das \u22122 aendert nichts am D!"},
+    {type:"calc",q:"f(x) = \u221A(5x \u2212 10). Ab welchem x-Wert?",answer:2,tolerance:0.01,expl:"5x \u2212 10 \u2265 0 \u2192 5x \u2265 10 \u2192 x \u2265 2."},
+    {type:"mc",q:"f(x) = \u221Ax \u2212 1. Wo ist die Nullstelle?",opts:["x = 0","x = 1","x = \u22121","Keine Nullstelle"],ans:1,expl:"\u221Ax \u2212 1 = 0 \u2192 \u221Ax = 1 \u2192 x = 1."},
+    {type:"mc",q:"f(x) = \u2212\u221A(x \u2212 1). Was aendert das Minus VOR der Wurzel am Definitionsbereich?",opts:["D wird kleiner","D wird \u211D","Nichts \u2013 D bleibt gleich","D = ]\u2212\u221E; 1]"],ans:2,expl:"Das Minus spiegelt den Graphen, aendert aber D NICHT."},
+    {type:"mc",q:"Welche Schreibweise ist richtig fuer D bei f(x) = \u221A(x \u2212 3)?",opts:["D = ]3; \u221E[","D = [3; \u221E[","D = [3; \u221E]","D = {3, \u221E}"],ans:1,expl:"x \u2265 3 \u2192 3 eingeschlossen [. \u221E nie eingeschlossen [. Also [3; \u221E[."},
+  ],
+  koeffizienten: [
+    {type:"mc",q:"f(x) = \u22122x\u00B2 + 5x + 1. Der Graph oeffnet sich \u2026 (Testaufgabe Nr. 5b!)",opts:["nach oben, steiler als x\u00B2","nach unten, flacher als x\u00B2","nach unten, steiler als x\u00B2","nach oben, flacher als x\u00B2"],ans:2,expl:"a = \u22122: negativ \u2192 unten. |\u22122| = 2 > 1 \u2192 steiler."},
+    {type:"mc",q:"f(x) = ax\u00B2 + bx + c. Was ist c?",opts:["x-Koordinate des Scheitels","y-Achsenabschnitt (Schnittpunkt mit y-Achse)","Steigung","Extremstelle"],ans:1,expl:"c = f(0). Also ist c der y-Wert bei x = 0."},
+    {type:"mc",q:"b = 0 bei f(x) = ax\u00B2 + bx + c bedeutet:",opts:["Keine Nullstellen","Scheitel liegt auf der y-Achse","Nach unten offen","c = 0"],ans:1,expl:"b = 0 \u2192 Scheitel bei x\u209B = \u2212b/(2a) = 0 \u2192 auf der y-Achse."},
+    {type:"mc",q:"b \u2260 0 bei f(x) = ax\u00B2 + bx + c bedeutet:",opts:["Parabel ist steiler","Scheitel NICHT auf der y-Achse","Keine Nullstellen","c ist negativ"],ans:1,expl:"b \u2260 0 \u2192 x\u209B = \u2212b/(2a) \u2260 0 \u2192 Scheitel seitlich verschoben."},
+    {type:"match",q:"Ordne den Koeffizienten ihre Bedeutung zu:",pairs:[{left:"a > 0",right:"nach oben offen"},{left:"a < 0",right:"nach unten offen"},{left:"c = 3",right:"y-Abschnitt bei y = 3"},{left:"b = 0",right:"Scheitel auf y-Achse"}]},
+    {type:"mc",q:"f(x) = 0,5x\u00B2 \u2212 4. Wie ist der Graph?",opts:["Oben offen, flacher, y-Abschnitt \u22124","Unten offen, steiler, y-Abschnitt \u22124","Oben offen, steiler, y-Abschnitt 4","Oben offen, flacher, y-Abschnitt 4"],ans:0,expl:"a = 0,5 > 0 \u2192 oben. |0,5| < 1 \u2192 flacher. c = \u22124."},
+    {type:"calc",q:"f(x) = \u22122x\u00B2 + 5x + 1. Berechne x\u209B = \u2212b/(2a).",answer:1.25,tolerance:0.01,expl:"x\u209B = \u22125/(2\u00B7(\u22122)) = \u22125/(\u22124) = 1,25."},
+    {type:"mc",q:"Wenn c > 0, dann schneidet der Graph die y-Achse \u2026",opts:["unterhalb des Ursprungs","im Ursprung","oberhalb des Ursprungs","gar nicht"],ans:2,expl:"c > 0 \u2192 f(0) = c > 0 \u2192 oberhalb."},
+  ],
+  gleichung: [
+    {type:"mc",q:"Um f(x) = ax\u00B2 + bx + c durch 3 Punkte zu bestimmen, braucht man \u2026",opts:["1 Gleichung","2 Gleichungen","3 Gleichungen mit 3 Unbekannten","4 Gleichungen"],ans:2,expl:"3 Unbekannte (a,b,c) \u2192 3 Punkte \u2192 3 Gleichungen."},
+    {type:"calc",q:"A(0|1), B(3|13), C(\u22121|5). Aus A(0|1) folgt c = ?",answer:1,tolerance:0.01,expl:"f(0) = c = 1."},
+    {type:"mc",q:"Scheitel S(4|1) und Punkt A(2|13). Wie findet man den 3. Punkt?",opts:["Ableiten","A am Scheitel spiegeln: xB = 2\u00B7xS \u2212 xA","x = 0 einsetzen","Braucht man nicht"],ans:1,expl:"Spiegelpunkt: xB = 2\u00B74 \u2212 2 = 6, yB = 13 \u2192 B(6|13)."},
+    {type:"calc",q:"Spiegelpunkt: S(4|1), A(2|13). Berechne xB = 2\u00B7xS \u2212 xA.",answer:6,tolerance:0.01,expl:"xB = 2\u00B74 \u2212 2 = 6."},
+    {type:"mc",q:"Punkt A(0|y\u2080) auf f(x) = ax\u00B2 + bx + c. Was weiss man sofort?",opts:["a = y\u2080","b = y\u2080","c = y\u2080","a + b + c = y\u2080"],ans:2,expl:"x = 0 \u2192 f(0) = c = y\u2080."},
+    {type:"mc",q:"Casio fx-CP400: Wo loest man 3 Gleichungen mit 3 Unbekannten?",opts:["Menu \u2192 Graph","Main \u2192 Math1 \u2192 4z3s","Menu \u2192 Tabelle","Geht nicht"],ans:1,expl:"Math1 \u2192 4z3s oeffnet simultane Gleichungen."},
+    {type:"calc",q:"Svinesund-Bruecke: S(0|92). Aus S folgt c = ?",answer:92,tolerance:0.01,expl:"f(0) = 92 \u2192 c = 92."},
+  ],
+  grafisch: [
+    {type:"mc",q:"f(x) = \u22122x\u00B2 + 5x + 1 im Intervall [\u22121; 4]. Wie berechnet man die y-Werte?",graph:"quad",opts:["Ableiten","x-Werte einsetzen \u2192 Wertetabelle erstellen","Nullstellen suchen","Am Casio unter Graph"],ans:1,expl:"Wertetabelle: x-Werte einsetzen und f(x) berechnen."},
+    {type:"calc",q:"f(x) = \u22122x\u00B2 + 5x + 1. Berechne f(0).",answer:1,tolerance:0.01,expl:"f(0) = \u22122\u00B70 + 5\u00B70 + 1 = 1."},
+    {type:"calc",q:"f(x) = \u22122x\u00B2 + 5x + 1. Berechne f(1).",answer:4,tolerance:0.01,expl:"f(1) = \u22122\u00B71 + 5\u00B71 + 1 = \u22122 + 5 + 1 = 4."},
+    {type:"calc",q:"f(x) = \u22122x\u00B2 + 5x + 1. Berechne f(\u22121).",answer:-6,tolerance:0.01,expl:"f(\u22121) = \u22122\u00B7(\u22121)\u00B2 + 5\u00B7(\u22121) + 1 = \u22122 \u2212 5 + 1 = \u22126."},
+    {type:"calc",q:"f(x) = \u22122x\u00B2 + 5x + 1. Berechne f(4).",answer:-11,tolerance:0.01,expl:"f(4) = \u22122\u00B716 + 5\u00B74 + 1 = \u221232 + 20 + 1 = \u221211."},
+    {type:"mc",q:"Was darf man bei einer grafischen Darstellung NICHT vergessen?",opts:["Achsenbeschriftung (x und y)","Den Titel der Funktion","Die Farbe der Kurve","Den Radius"],ans:0,expl:"Im Test angekreidet: 'Achsenbeschriftung fehlt!' Immer x- und y-Achse beschriften!"},
+    {type:"mc",q:"Schau dir den Graphen an. Was gilt fuer a?",graph:"down_steep",opts:["a > 1","0 < a < 1","\u22121 < a < 0","a < \u22121"],ans:3,expl:"Nach unten offen \u2192 a < 0. Steiler \u2192 |a| > 1. Also a < \u22121."},
+    {type:"mc",q:"Schau dir den Graphen an. Was gilt fuer a?",graph:"up_flat",opts:["a > 1","0 < a < 1","a = \u22121","a < \u22121"],ans:1,expl:"Nach oben offen \u2192 a > 0. Flacher \u2192 |a| < 1. Also 0 < a < 1."},
+    {type:"match",q:"Ordne Wertetabelle: f(x) = \u22122x\u00B2 + 5x + 1",pairs:[{left:"f(0)",right:"1"},{left:"f(1)",right:"4"},{left:"f(2)",right:"3"},{left:"f(\u22121)",right:"\u22126"}]},
+  ],
+  schnittpunkt: [
+    {type:"mc",q:"Wie berechnet man den Schnittpunkt von f(x) und g(x)?",opts:["f(x) + g(x) = 0","f(x) = g(x), nach x loesen","f(x) \u00B7 g(x) = 1","f(0) = g(0)"],ans:1,expl:"Gleichsetzen: f(x) = g(x). x berechnen. Dann y einsetzen."},
+    {type:"calc",q:"f(x) = x\u207B\u00B9 \u2212 2, g(x) = 4 \u2212 x\u207B\u00B9. Loese 2\u00B7x\u207B\u00B9 = 6 nach x auf.",answer:0.333,tolerance:0.04,expl:"x\u207B\u00B9 = 3 \u2192 x = 1/3 \u2248 0,333."},
+    {type:"calc",q:"f(x) = 2 + x\u207B\u00B2, g(x) = \u2212x\u207B\u00B2 + 6. Gleichsetzen \u2192 2x\u207B\u00B2 = 4. Berechne x\u00B2.",answer:0.5,tolerance:0.01,expl:"x\u207B\u00B2 = 2 \u2192 1/x\u00B2 = 2 \u2192 x\u00B2 = 0,5."},
+    {type:"calc",q:"Schnittpunkt: x\u00B2 = 0,5. Setze x = \u221A0,5 in f(x) = 2 + x\u207B\u00B2 ein. y = ?",answer:4,tolerance:0.01,expl:"f(\u221A0,5) = 2 + (\u221A0,5)\u207B\u00B2 = 2 + 2 = 4."},
+    {type:"mc",q:"f(x) = 2 + x\u207B\u00B2 und g(x) = \u2212x\u207B\u00B2 + 6. Warum ZWEI Schnittpunkte?",opts:["Weil f zwei Nullstellen hat","Weil x\u00B2 = 0,5 \u2192 x = +\u221A0,5 und x = \u2212\u221A0,5","Weil g eine Parabel ist","Es gibt nur einen"],ans:1,expl:"x\u00B2 = 0,5 hat zwei Loesungen: x = \u00B1\u221A0,5."},
+    {type:"mc",q:"Nach dem Gleichsetzen hat man x. Was fehlt noch?",opts:["Ableiten","y-Wert berechnen: in f ODER g einsetzen","Polstelle angeben","Definitionsbereich"],ans:1,expl:"Man hat x. Den y-Wert bekommt man durch Einsetzen."},
+  ],
+};
+
+// ──────────── SVG HELPERS ────────────
+function makeParabolaSVG(a, color) {
+  const w=260,h=200,cx=w/2,cy=h*0.65,sc=22;
+  let pts=[];
+  for(let xi=-5;xi<=5;xi+=0.3){
+    const yv=a*xi*xi, px=cx+xi*sc, py=cy-yv*sc*0.35;
+    if(py>5&&py<h-5&&px>5&&px<w-5) pts.push(px+","+py);
+  }
+  return `<svg width="${w}" height="${h}"><line x1="10" y1="${cy}" x2="${w-10}" y2="${cy}" stroke="#ccc"/><line x1="${cx}" y1="10" x2="${cx}" y2="${h-10}" stroke="#ccc"/><text x="${w-16}" y="${cy-6}" font-size="11" fill="#aaa">x</text><text x="${cx+6}" y="18" font-size="11" fill="#aaa">y</text>${pts.length>2?`<polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2.5"/>`:""}</svg>`;
+}
+
+function makeQuadSVG(a,b,c,xmin,xmax) {
+  const w=280,h=220,pad=20;
+  let yvals=[];
+  for(let x=xmin;x<=xmax;x+=0.1) yvals.push(a*x*x+b*x+c);
+  const ymin=Math.min(...yvals),ymax2=Math.max(...yvals),yRange=ymax2-ymin||1;
+  const xScale=(w-2*pad)/(xmax-xmin), yScale=(h-2*pad)/yRange;
+  const toX=x=>pad+(x-xmin)*xScale, toY=y=>h-pad-(y-ymin)*yScale;
+  let pts=[];
+  for(let x=xmin;x<=xmax;x+=0.1) pts.push(toX(x)+","+toY(a*x*x+b*x+c));
+  const x0=toX(0),y0=toY(0);
+  let axes="";
+  if(y0>pad&&y0<h-pad) axes+=`<line x1="${pad}" y1="${y0}" x2="${w-pad}" y2="${y0}" stroke="#ccc"/>`;
+  if(x0>pad&&x0<w-pad) axes+=`<line x1="${x0}" y1="${pad}" x2="${x0}" y2="${h-pad}" stroke="#ccc"/>`;
+  return `<svg width="${w}" height="${h}">${axes}<polyline points="${pts.join(" ")}" fill="none" stroke="#8e6a2a" stroke-width="2.5"/>${x0>pad&&x0<w-pad?`<circle cx="${x0}" cy="${toY(c)}" r="4" fill="#d4592a"/>`:""}<text x="${w-14}" y="${h-pad-4}" font-size="10" fill="#aaa">x</text><text x="${pad+2}" y="${pad+12}" font-size="10" fill="#aaa">y</text></svg>`;
+}
+
+function graphHTML(type) {
+  if(type==="down_steep") return `<div class="graph-wrap">${makeParabolaSVG(-2,"#c44")}</div>`;
+  if(type==="up_flat") return `<div class="graph-wrap">${makeParabolaSVG(0.3,"#2a6e4e")}</div>`;
+  if(type==="quad") return `<div class="graph-wrap">${makeQuadSVG(-2,5,1,-1,4)}</div>`;
+  return "";
+}
+
+// ──────────── STATE ────────────
+let state = { screen:"menu", topic:null, questions:[], currentQ:0, results:[], answered:false };
+
+function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function getQuestions(id) {
+  if(id==="mixed"){
+    let mixed=[];
+    Object.values(Q).forEach(qs=>{const s=shuffle(qs);mixed.push(...s.slice(0,2));});
+    return shuffle(mixed).slice(0,14);
+  }
+  return Q[id]?shuffle(Q[id]):[];
+}
+
+function score(){ return state.results.filter(Boolean).length; }
+function pct(){ return state.questions.length?Math.round(score()/state.questions.length*100):0; }
+function grade(p){ return p>=90?{g:"1 \u2013 Sehr Gut",c:"#2a6e4e",e:"\uD83C\uDFC6"}:p>=75?{g:"2 \u2013 Gut",c:"#3a8e5a",e:"\uD83D\uDCAA"}:p>=60?{g:"3 \u2013 Befriedigend",c:"#8e8a2a",e:"\uD83D\uDCD6"}:p>=50?{g:"4 \u2013 Genuegend",c:"#c49a2a",e:"\u26A0\uFE0F"}:{g:"5 \u2013 Nicht Genuegend",c:"#c44",e:"\uD83D\uDD01"}; }
+
+// ──────────── RENDER ────────────
+const app = document.getElementById("app");
+
+function render() {
+  if(state.screen==="menu") renderMenu();
+  else if(state.screen==="quiz") renderQuiz();
+  else if(state.screen==="result") renderResult();
+}
+
+function renderMenu() {
+  let h = `<div class="menu-header"><div class="icon">\uD83D\uDCD0</div><h1>SM\u00DCP 4 Trainer</h1><p>Potenz- \u00B7 Wurzel- \u00B7 Quadratische Funktionen</p></div><div class="topic-list">`;
+  TOPICS.forEach((t,i)=>{
+    const mx = t.id==="mixed";
+    h += `<button class="topic-btn${mx?" mixed":""}" onclick="startTopic(${i})"><span class="topic-icon" style="background:${mx?"rgba(255,255,255,.12)":`${t.color}14`}">${t.icon}</span><div style="flex:1"><div class="topic-label">${t.label}</div><div class="topic-desc">${t.desc}</div></div><span class="topic-arrow">\u203A</span></button>`;
+  });
+  h += `</div><div class="tip-box">\uD83D\uDCA1 Uebe jedes Thema einzeln bis 90%+, dann den gemischten Test!</div>`;
+  app.innerHTML = h;
+}
+
+function startTopic(i) {
+  const t = TOPICS[i];
+  state = { screen:"quiz", topic:t, questions:getQuestions(t.id), currentQ:0, results:[], answered:false };
+  render();
+}
+
+function renderQuiz() {
+  const {topic:t, questions:qs, currentQ:ci, results:res, answered:ans} = state;
+  const cq = qs[ci];
+  if(!cq) return;
+  const sc = res.filter(Boolean).length;
+  const prog = ((ci+(ans?1:0))/qs.length*100);
+  const typeLabel = cq.type==="mc"?"Multiple Choice":cq.type==="calc"?"\uD83E\uDDEE Berechnen":"\uD83D\uDD17 Zuordnen";
+  const typeBg = cq.type==="mc"?"#eef3fa":cq.type==="calc"?"#fef9f0":"#f0f7f3";
+  const typeCol = cq.type==="mc"?"#2a4a8e":cq.type==="calc"?"#8e6a2a":"#2a6e4e";
+
+  let h = `<div class="quiz-header"><button class="quiz-back" onclick="goMenu()">\u2190</button><div class="quiz-info"><div class="quiz-topic" style="color:${t.color}">${t.label}</div><div class="quiz-progress-text">Frage ${ci+1} / ${qs.length}</div></div><div class="quiz-score">${sc}/${res.length}</div></div>`;
+  h += `<div class="progress-bar"><div class="progress-fill" style="width:${prog}%;background:${t.color}"></div></div>`;
+  h += `<span class="q-type-badge" style="background:${typeBg};color:${typeCol}">${typeLabel}</span>`;
+  h += `<div class="q-card" id="qcard">`;
+
+  if(cq.type==="mc") h += renderMC(cq);
+  else if(cq.type==="calc") h += renderCalc(cq);
+  else if(cq.type==="match") h += renderMatch(cq);
+
+  h += `</div>`;
+  if(ans) {
+    h += `<button class="btn btn-primary btn-full" style="margin-top:14px;background:${t.color}" onclick="nextQ()">${ci<qs.length-1?"N\u00E4chste Frage \u2192":"\uD83C\uDFC1 Ergebnis anzeigen"}</button>`;
+  }
+  app.innerHTML = h;
+}
+
+// ── MC ──
+function renderMC(q) {
+  let h = `<div class="q-text">${q.q}</div>`;
+  if(q.graph) h += graphHTML(q.graph);
+  h += `<div class="mc-opts" id="mc-opts">`;
+  const letters = "ABCD";
+  q.opts.forEach((o,i)=>{
+    h += `<button class="mc-opt" id="mc-${i}" onclick="selectMC(${i})"><span class="mc-letter">${letters[i]}</span>${o}</button>`;
+  });
+  h += `</div>`;
+  h += `<button class="btn btn-primary" id="mc-check" style="margin-top:16px" onclick="checkMC()" disabled>Pr\u00FCfen</button>`;
+  h += `<div id="mc-feedback"></div>`;
+  return h;
+}
+
+window._mcSel = null;
+function selectMC(i) {
+  if(state.answered) return;
+  window._mcSel = i;
+  document.querySelectorAll(".mc-opt").forEach((el,j)=>{ el.className = "mc-opt" + (j===i?" selected":""); });
+  document.getElementById("mc-check").disabled = false;
+}
+function checkMC() {
+  const q = state.questions[state.currentQ];
+  const sel = window._mcSel;
+  if(sel===null) return;
+  const ok = sel===q.ans;
+  state.results.push(ok);
+  state.answered = true;
+  document.querySelectorAll(".mc-opt").forEach((el,i)=>{
+    el.disabled = true;
+    if(i===q.ans) el.className = "mc-opt correct";
+    else if(i===sel && !ok) el.className = "mc-opt wrong";
+    else el.className = "mc-opt";
+  });
+  document.getElementById("mc-check").style.display = "none";
+  document.getElementById("mc-feedback").innerHTML = `<div class="feedback ${ok?"ok":"err"}"><strong style="color:${ok?"var(--ok)":"var(--err)"}">${ok?"\u2713 Richtig!":"\u2717 Falsch!"}</strong><div class="expl">${q.expl}</div></div>`;
+  render();
+}
+
+// ── CALC ──
+function renderCalc(q) {
+  let h = `<div class="q-text">${q.q}</div>`;
+  h += `<div class="calc-row"><span class="calc-label">Antwort =</span><input type="text" class="calc-input" id="calc-in" placeholder="Zahl\u2026" onkeydown="if(event.key==='Enter')checkCalc()"><button class="btn btn-primary" id="calc-check" onclick="checkCalc()" disabled style="margin-left:4px">Pr\u00FCfen</button></div>`;
+  h += `<div id="calc-feedback"></div>`;
+  setTimeout(()=>{
+    const inp = document.getElementById("calc-in");
+    if(inp) inp.addEventListener("input",()=>{ document.getElementById("calc-check").disabled = !inp.value; });
+  },50);
+  return h;
+}
+function checkCalc() {
+  const q = state.questions[state.currentQ];
+  const inp = document.getElementById("calc-in");
+  const v = parseFloat(inp.value.replace(",","."));
+  const ok = !isNaN(v) && Math.abs(v-q.answer)<=(q.tolerance||0.01);
+  state.results.push(ok);
+  state.answered = true;
+  inp.disabled = true;
+  inp.className = "calc-input "+(ok?"correct":"wrong");
+  document.getElementById("calc-check").style.display = "none";
+  document.getElementById("calc-feedback").innerHTML = `<div class="feedback ${ok?"ok":"err"}"><strong style="color:${ok?"var(--ok)":"var(--err)"}">${ok?"\u2713 Richtig!":"\u2717 Falsch! Richtig: "+q.answer}</strong><div class="expl">${q.expl}</div></div>`;
+  render();
+}
+
+// ── MATCH ──
+function renderMatch(q) {
+  const rights = shuffle([...new Set(q.pairs.map(p=>p.right))]);
+  let h = `<div class="q-text">${q.q}</div><div id="match-pairs">`;
+  q.pairs.forEach((p,i)=>{
+    h += `<div class="match-row"><div class="match-left" id="ml-${i}">${p.left}</div><span class="match-arrow">\u2192</span><select class="match-select" id="ms-${i}" onchange="matchChanged()"><option value="">-- w\u00E4hlen --</option>`;
+    rights.forEach(r=>{ h += `<option value="${r}">${r}</option>`; });
+    h += `</select></div>`;
+  });
+  h += `</div><button class="btn btn-primary" id="match-check" style="margin-top:16px" onclick="checkMatch()" disabled>Pr\u00FCfen</button><div id="match-feedback"></div>`;
+  return h;
+}
+function matchChanged() {
+  const q = state.questions[state.currentQ];
+  let all = true;
+  q.pairs.forEach((_,i)=>{ if(!document.getElementById("ms-"+i).value) all=false; });
+  document.getElementById("match-check").disabled = !all;
+}
+function checkMatch() {
+  const q = state.questions[state.currentQ];
+  let ok = true;
+  q.pairs.forEach((p,i)=>{
+    const sel = document.getElementById("ms-"+i).value;
+    const ml = document.getElementById("ml-"+i);
+    document.getElementById("ms-"+i).disabled = true;
+    if(sel===p.right) ml.classList.add("correct");
+    else { ml.classList.add("wrong"); ok=false; }
+  });
+  state.results.push(ok);
+  state.answered = true;
+  document.getElementById("match-check").style.display = "none";
+  let fb = `<div class="feedback ${ok?"ok":"err"}"><strong style="color:${ok?"var(--ok)":"var(--err)"}">${ok?"\u2713 Richtig!":"\u2717 Nicht ganz."}</strong>`;
+  if(!ok) { fb += `<div class="expl" style="margin-top:8px">Richtig:`; q.pairs.forEach(p=>{ fb += `<br><strong>${p.left}</strong> \u2192 ${p.right}`; }); fb += `</div>`; }
+  fb += `</div>`;
+  document.getElementById("match-feedback").innerHTML = fb;
+  render();
+}
+
+function nextQ() {
+  if(state.currentQ < state.questions.length-1) { state.currentQ++; state.answered=false; window._mcSel=null; render(); }
+  else { state.screen="result"; render(); }
+}
+function goMenu() { state.screen="menu"; render(); }
+
+function renderResult() {
+  const p = pct(), g = grade(p), sc = score(), tot = state.questions.length;
+  let h = `<div class="result-card"><div class="result-emoji">${g.e}</div><div class="result-grade" style="color:${g.c}">${g.g}</div><div class="result-pct">${p}%</div><div class="result-sub">${sc} von ${tot} richtig</div><div class="result-bar"><div class="result-bar-fill" style="width:${p}%;background:${g.c}"></div></div><div class="result-dots">`;
+  state.results.forEach((r,i)=>{ h += `<div class="result-dot ${r?"ok":"err"}">${i+1}</div>`; });
+  h += `</div></div><div class="result-btns"><button class="btn btn-primary" onclick="retry()">\uD83D\uDD01 Nochmal</button><button class="btn btn-outline" onclick="goMenu()">\u2190 Men\u00FC</button></div>`;
+  if(p<90) {
+    const msg = p<50?"\uD83D\uDCDA Schau dir die Lernunterlage nochmal an.":p<75?"\uD83D\uDCD6 Lies die Erklaerungen bei falschen Antworten!":"\uD83D\uDCAA Fast! Noch ein paar Details und die 1 ist drin!";
+    h += `<div class="tip-box" style="margin-top:16px">${msg}</div>`;
+  }
+  app.innerHTML = h;
+}
+
+function retry() {
+  const idx = TOPICS.findIndex(t=>t.id===state.topic.id);
+  startTopic(idx);
+}
+
+// ──────────── INIT ────────────
+render();
+</script>
+</body>
+</html>
